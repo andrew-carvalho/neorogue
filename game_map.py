@@ -56,7 +56,11 @@ class GameMap:
             default=tile_types.UNEXPLORED,
         )
 
-        for entitiy in self.entities:
+        entities_sorted_for_rendering = sorted(
+            self.entities, key=lambda x: x.render_order.value
+        )
+
+        for entitiy in entities_sorted_for_rendering:
             if self.visible[entitiy.x, entitiy.y]:
                 console.print(
                     x=entitiy.x, y=entitiy.y, string=entitiy.char, fg=entitiy.color
