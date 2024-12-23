@@ -3,6 +3,8 @@ import copy
 
 import tcod
 
+import colors
+
 from engine import Engine
 import entities_list
 from procgen import generate_dungeon
@@ -13,7 +15,7 @@ def main() -> None:
     screen_height = 50
 
     map_width = 80
-    map_height = 45
+    map_height = 43
 
     room_max_size = 10
     room_min_size = 6
@@ -40,6 +42,10 @@ def main() -> None:
     )
 
     engine.update_fov()
+
+    engine.log.add_message(
+        "Hello Rogue and welcome to yet another dungeon!", colors.welcome_text
+    )
 
     with tcod.context.new_terminal(
         screen_width, screen_height, tileset=tileset, title="Neorogue", vsync=True
