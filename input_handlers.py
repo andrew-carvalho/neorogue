@@ -4,6 +4,8 @@ from typing import Optional, TYPE_CHECKING
 
 import tcod.event
 
+from tcod import libtcodpy
+
 from actions import Action, BumpAction, EscapeAction, WaitAction
 
 if TYPE_CHECKING:
@@ -91,6 +93,8 @@ class MainGameEventHandler(EventHandler):
             action = BumpAction(player, dx, dy)
         elif key in WAIT_KEYS:
             action = WaitAction(player)
+        elif key == tcod.event.KeySym.v:
+            self.engine.event_handler = HistoryViewer(self.engine)
 
         return action
 
@@ -114,3 +118,54 @@ class GameOverEventHandler(EventHandler):
             action = EscapeAction(self.engine.player)
 
         return action
+
+
+CURSOR_Y_KEYS = {
+    tcod.event.KeySym.UP: -1,
+    tcod.event.KeySym.DOWN: 1,
+    tcod.event.KeySym.PAGEUP: -10,
+    tcod.event.KeySym.PAGEDOWN: 10,
+}
+
+
+class HistoryViewer(EventHandler):
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.log_length = len(engine.log.messages)
+        self.cursor = self.log_length - 1
+
+    def on_render(self, console: tcod.context.Console) -> None:
+        super().on_render(console)
+
+        log_console = tcod.console.Console(console.width - 6, console.height - 6)
+        log_console.draw_frame(0, 0, log_console.width, log_console.height)
+        log_console.print_box(
+            0, 0, log_console.width, 1, "|Message History|", alignment=libtcodpy.CENTER
+        )
+
+        self.engine.log.render_messages(
+            log_console,
+            1,
+            1,
+            log_console.width - 2,
+            log_console.height - 2,
+            self.engine.log.messages[: self.cursor + 1],
+        )
+
+        log_console.blit(console, 3, 3)
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+        if event.sym in CURSOR_Y_KEYS:
+            adjust = CURSOR_Y_KEYS[event.sym]
+            if adjust < 0 and self.cursor == 0:
+                self.cursor = self.log_length - 1
+            elif adjust > 0 and self.cursor == self.log_length - 1:
+                self.cursor = 0
+            else:
+                self.cursor = max(0, min(self.cursor + adjust, self.log_length - 1))
+        elif event.sym == tcod.event.KeySym.HOME:
+            self.cursor = 0
+        elif event.sym == tcod.event.KeySym.END:
+            self.cursor = self.log_length - 1
+        else:
+            self.engine.event_handler = MainGameEventHandler(self.engine)
